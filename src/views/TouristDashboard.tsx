@@ -85,6 +85,52 @@ const riskBorderColors: Record<RiskLevel, string> = {
   HIGH: 'border-rose-500/40 text-rose-300 bg-rose-500/10'
 };
 
+const PlacePhoto: React.FC<{ image?: string; placeName: string; className?: string }> = ({
+  image,
+  placeName,
+  className = 'w-24 aspect-[4/3] shrink-0'
+}) => {
+  const imageUrl = typeof image === 'string' ? image.trim() : '';
+  const [loading, setLoading] = useState(Boolean(imageUrl));
+  const [failed, setFailed] = useState(!imageUrl);
+
+  useEffect(() => {
+    setLoading(Boolean(imageUrl));
+    setFailed(!imageUrl);
+  }, [imageUrl]);
+
+  if (failed || !imageUrl) {
+    return (
+      <div className={`${className} overflow-hidden rounded border border-slate-700 bg-slate-800`}>
+        <img src="/place-photo-fallback.svg" alt={`Photo unavailable for ${placeName}`} className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative ${className} overflow-hidden rounded border border-slate-800 bg-slate-800`}>
+      {loading && (
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-800 text-slate-400">
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+          <span className="text-[9px]">Loading photo</span>
+        </div>
+      )}
+      <img
+        src={imageUrl}
+        alt={`Photo of ${placeName}`}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false);
+          setFailed(true);
+        }}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
+      />
+    </div>
+  );
+};
+
 export const TouristDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -593,18 +639,13 @@ export const TouristDashboard: React.FC = () => {
 
                       {/* Monument Photo & History Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                        {site.image && (
-                          <div className="md:col-span-1 rounded overflow-hidden max-h-48 border border-slate-800">
-                            <img
-                              src={site.image}
-                              alt={site.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                        )}
+                        <PlacePhoto
+                          image={site.image}
+                          placeName={site.name}
+                          className="w-full aspect-[4/3] max-h-48 md:col-span-1"
+                        />
 
-                        <div className={`${site.image ? 'md:col-span-3' : 'md:col-span-4'} space-y-3 text-xs text-slate-300 leading-relaxed`}>
+                        <div className="md:col-span-3 space-y-3 text-xs text-slate-300 leading-relaxed">
                           <div>
                             <strong className="text-slate-100 font-semibold block mb-0.5">Historical Significance:</strong>
                             <p className="text-slate-400">{site.historicalSignificance}</p>
@@ -1014,11 +1055,7 @@ export const TouristDashboard: React.FC = () => {
                 <div className="space-y-3">
                   {activeProfile.places.map((place, idx) => (
                     <div key={idx} className="flex gap-3 text-xs border-b border-slate-800/60 pb-3 last:border-b-0">
-                      {place.image && (
-                        <div className="w-20 h-16 rounded overflow-hidden shrink-0 border border-slate-800">
-                          <img src={place.image} alt={place.name} className="w-full h-full object-cover" />
-                        </div>
-                      )}
+                      <PlacePhoto key={place.name} image={place.image} placeName={place.name} />
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <h4 className="font-bold text-white">{place.name}</h4>

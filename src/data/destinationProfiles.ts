@@ -27,7 +27,7 @@ export interface HeritageSite {
     entryFee: string;
     bestTimeToVisit: string;
   };
-  image: string;
+  image?: string;
 }
 
 export interface TransportOption {
@@ -82,7 +82,7 @@ export interface VisitingPlace {
   name: string;
   time: string;
   bestSlot: string;
-  image: string;
+  image?: string;
   note: string;
 }
 
@@ -251,7 +251,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
         name: 'Rashtrapati Bhavan Forecourt',
         time: '1 hour',
         bestSlot: 'Morning (9:30 AM)',
-        image: 'https://images.unsplash.com/photo-1544735716-392fe2625b7d?auto=format&fit=crop&w=900&q=80',
         note: 'Official residence of the President of India displaying classical European and Indian stone architecture.'
       }
     ],
@@ -270,7 +269,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
           entryFee: '₹40 (Indian Citizens) / ₹600 (Foreign Nationals)',
           bestTimeToVisit: 'Early morning (7 AM - 9 AM) or golden hour before sunset'
         },
-        image: 'https://images.unsplash.com/photo-1587474260584-9dc6d0d0d87b?auto=format&fit=crop&w=900&q=80'
       },
       {
         id: 'qutub-minar',
@@ -286,7 +284,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
           entryFee: '₹40 (Indian Citizens) / ₹600 (Foreign Nationals)',
           bestTimeToVisit: 'Late afternoon through evening light show'
         },
-        image: 'https://images.unsplash.com/photo-1544735716-392fe2625b7d?auto=format&fit=crop&w=900&q=80'
       }
     ],
     seasonalGuide: [
@@ -667,7 +664,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
         name: 'Nahargarh Fort Sunset Point',
         time: '2 hours',
         bestSlot: 'Sunset (5:00 PM - 7:00 PM)',
-        image: 'https://images.unsplash.com/photo-1601412436000-7ee7d2281dd9?auto=format&fit=crop&w=900&q=80',
         note: 'High ridge fortress on the Aravalli hills overlooking the entirety of the Pink City.'
       }
     ],
@@ -686,7 +682,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
           entryFee: '₹100 (Indian Citizens) / ₹500 (Foreign Nationals)',
           bestTimeToVisit: 'Morning (8:30 AM - 11 AM) before heat'
         },
-        image: 'https://images.unsplash.com/photo-1556005819-5d0fe9fa3c4d?auto=format&fit=crop&w=900&q=80'
       },
       {
         id: 'hawa-mahal',
@@ -871,7 +866,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
         name: 'Agra Fort (Red Fort of Agra)',
         time: '2 - 3 hours',
         bestSlot: 'Morning (10:00 AM - 12:30 PM)',
-        image: 'https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&w=900&q=80',
         note: 'Massive red sandstone residence of emperors Akbar, Jahangir, and Shah Jahan with marble palaces.'
       },
       {
@@ -1112,7 +1106,6 @@ export const DESTINATION_PROFILES: DestinationProfile[] = [
           entryFee: '₹30 (Indian Citizens) / ₹100 (Foreign Nationals)',
           bestTimeToVisit: 'Afternoon (1:00 PM - 4:00 PM)'
         },
-        image: 'https://images.unsplash.com/photo-1596761224566-34027780362f?auto=format&fit=crop&w=900&q=80'
       }
     ],
     seasonalGuide: [
