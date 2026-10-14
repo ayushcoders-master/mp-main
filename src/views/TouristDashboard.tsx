@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { TouristCategory, IPrediction, IEmergencyService } from '../types.ts';
 import { predictionApi, emergencyApi } from '../services/api.ts';
+import { fetchPlaceImage, ResolvedPlaceImage } from '../services/placeImages.ts';
 import { INDIAN_CITIES, INDIAN_CITY_NAMES, POPULAR_INDIAN_CITIES } from '../../shared/indianCities.ts';
 import {
   DESTINATION_PROFILES,
@@ -85,21 +86,53 @@ const riskBorderColors: Record<RiskLevel, string> = {
   HIGH: 'border-rose-500/40 text-rose-300 bg-rose-500/10'
 };
 
-const PlacePhoto: React.FC<{ image?: string; placeName: string; className?: string }> = ({
+/**
+ * Shows a real photo of a place. Order of preference:
+ *   1. a photo looked up by name from Wikipedia / Wikimedia Commons (via /api/place-image)
+ *   2. the image URL stored with the data (if any)
+ *   3. a neutral placeholder
+ */
+const PlacePhoto: React.FC<{
+  image?: string;
+  placeName: string;
+  city?: string;
+  kind?: 'place' | 'city';
+  className?: string;
+}> = ({
   image,
   placeName,
+  city = '',
+  kind = 'place',
   className = 'w-24 aspect-[4/3] shrink-0'
 }) => {
-  const imageUrl = typeof image === 'string' ? image.trim() : '';
-  const [loading, setLoading] = useState(Boolean(imageUrl));
-  const [failed, setFailed] = useState(!imageUrl);
+  const storedUrl = typeof image === 'string' ? image.trim() : '';
+  const [wiki, setWiki] = useState<ResolvedPlaceImage | null>(null);
+  const [lookupDone, setLookupDone] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(Boolean(imageUrl));
-    setFailed(!imageUrl);
-  }, [imageUrl]);
+    let cancelled = false;
+    setWiki(null);
+    setLookupDone(false);
+    setAttempt(0);
+    setLoading(true);
+    fetchPlaceImage(placeName, city, kind).then((result) => {
+      if (cancelled) return;
+      setWiki(result);
+      setLookupDone(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [placeName, city, kind, storedUrl]);
 
-  if (failed || !imageUrl) {
+  const candidates = [wiki?.url, storedUrl].filter(
+    (url, index, all): url is string => Boolean(url) && all.indexOf(url) === index
+  );
+  const currentUrl = lookupDone ? candidates[attempt] : undefined;
+
+  if (lookupDone && !currentUrl) {
     return (
       <div className={`${className} overflow-hidden rounded border border-slate-700 bg-slate-800`}>
         <img src="/place-photo-fallback.svg" alt={`Photo unavailable for ${placeName}`} className="h-full w-full object-cover" />
@@ -107,26 +140,44 @@ const PlacePhoto: React.FC<{ image?: string; placeName: string; className?: stri
     );
   }
 
+  const fromWikipedia = Boolean(wiki?.url) && currentUrl === wiki?.url;
+
   return (
     <div className={`relative ${className} overflow-hidden rounded border border-slate-800 bg-slate-800`}>
-      {loading && (
+      {(loading || !currentUrl) && (
         <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-800 text-slate-400">
           <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           <span className="text-[9px]">Loading photo</span>
         </div>
       )}
-      <img
-        src={imageUrl}
-        alt={`Photo of ${placeName}`}
-        loading="lazy"
-        decoding="async"
-        onLoad={() => setLoading(false)}
-        onError={() => {
-          setLoading(false);
-          setFailed(true);
-        }}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
-      />
+      {currentUrl && (
+        <img
+          key={currentUrl}
+          src={currentUrl}
+          alt={`Photo of ${placeName}`}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoading(false)}
+          onError={() => {
+            // try the next candidate; when none are left the placeholder is shown
+            setLoading(true);
+            setAttempt((value) => value + 1);
+          }}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
+        />
+      )}
+      {fromWikipedia && !loading && wiki?.pageUrl && (
+        <a
+          href={wiki.pageUrl}
+          target="_blank"
+          rel="noreferrer"
+          title={`Photo via Wikipedia: ${wiki.title}`}
+          className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] text-slate-200 hover:text-white"
+        >
+          Wikipedia
+        </a>
+      )}
     </div>
   );
 };
@@ -476,6 +527,15 @@ export const TouristDashboard: React.FC = () => {
         <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-12">
           {/* DESTINATION OVERVIEW HEADER (Clean banner with image backdrop, no heavy box) */}
           <div className="border-b border-slate-800 pb-8">
+            {/* Real photo of the searched destination (works for any city, not only the built-in profiles) */}
+            <PlacePhoto
+              key={activeProfile ? activeProfile.city : searchedCity}
+              image={activeProfile?.image}
+              placeName={activeProfile ? activeProfile.city : searchedCity}
+              kind="city"
+              className="w-full h-44 sm:h-60 mb-6"
+            />
+
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -642,6 +702,7 @@ export const TouristDashboard: React.FC = () => {
                         <PlacePhoto
                           image={site.image}
                           placeName={site.name}
+                          city={activeProfile.city}
                           className="w-full aspect-[4/3] max-h-48 md:col-span-1"
                         />
 
@@ -827,16 +888,12 @@ export const TouristDashboard: React.FC = () => {
                 {activeProfile.hotels.slice(0, 4).map((hotel, idx) => (
                   <div key={idx} className="py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                      {hotel.image && (
-                        <div className="w-full sm:w-36 h-24 rounded overflow-hidden shrink-0 border border-slate-800">
-                          <img
-                            src={hotel.image}
-                            alt={hotel.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
+                      <PlacePhoto
+                        image={hotel.image}
+                        placeName={hotel.name}
+                        city={activeProfile.city}
+                        className="w-full sm:w-36 h-24 shrink-0"
+                      />
 
                       <div className="space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1055,7 +1112,7 @@ export const TouristDashboard: React.FC = () => {
                 <div className="space-y-3">
                   {activeProfile.places.map((place, idx) => (
                     <div key={idx} className="flex gap-3 text-xs border-b border-slate-800/60 pb-3 last:border-b-0">
-                      <PlacePhoto key={place.name} image={place.image} placeName={place.name} />
+                      <PlacePhoto key={place.name} image={place.image} placeName={place.name} city={activeProfile.city} />
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <h4 className="font-bold text-white">{place.name}</h4>

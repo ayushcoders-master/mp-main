@@ -12,6 +12,7 @@ import { routeRouter } from './server/routes/routeRoutes.js';
 import { adminRouter } from './server/routes/adminRoutes.js';
 import { reviewRouter } from './server/routes/reviewRoutes.js';
 import { feedbackRouter } from './server/routes/feedbackRoutes.js';
+import { placeImageRouter } from './server/routes/placeImageRoutes.js';
 import { connectDB, closeDB } from './server/db.js';
 import { assertAuthConfig } from './server/auth.js';
 
@@ -48,6 +49,7 @@ async function startServer() {
   app.use('/api/admin', adminRouter);
   app.use('/api/reviews', reviewRouter);
   app.use('/api/feedback', feedbackRouter);
+  app.use('/api/place-image', placeImageRouter);
 
   // Unknown API routes -> JSON 404 (instead of the SPA's index.html)
   app.use('/api', (_req, res) => res.status(404).json({ error: 'API route not found' }));

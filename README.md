@@ -69,6 +69,10 @@ Limits to state in your report: scores are *relative* (a city at 0 is the lowest
 
 To rebuild the JSON from the NCRB volumes: `python3 scripts/extract_ncrb.py --vol1 vol1.txt --women women.csv --cyber cyber.csv` (it checks every parsed column against NCRB's own totals). Sources: [Crime in India 2022 on OpenCity](https://data.opencity.in/dataset/crime-in-india-2022) (public domain) and [ncrb.gov.in](https://ncrb.gov.in/crime-in-india.html).
 
+## Place photos
+
+Photos for destinations, heritage sites, sightseeing places and hotels are looked up by name from Wikipedia / Wikimedia Commons through `GET /api/place-image` (`server/routes/placeImageRoutes.ts`; results are cached in memory, no API key needed). The dashboard (`PlacePhoto` in `src/views/TouristDashboard.tsx`) tries that real photo first, then the image URL stored in `src/data/destinationProfiles.ts`, then a placeholder. The server needs outbound internet access to reach `en.wikipedia.org`.
+
 ## Production
 
 ```
